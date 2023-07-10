@@ -73,6 +73,7 @@ class MyViewModel : ViewModel() {
             override fun onFailure(call: Call, e: IOException) {
                 // Handle the error here
                 Log.e("API Error", e.message ?: "")
+                _uiStateError.value = true;
             }
         })
     }
@@ -122,6 +123,7 @@ class MyViewModel : ViewModel() {
             override fun onFailure(call: Call, e: IOException) {
                 // Handle the error here
                 Log.e("API Error", e.message ?: "")
+                _uiStateError.value = true;
             }
         })
 
