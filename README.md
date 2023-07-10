@@ -8,6 +8,9 @@ minSdk 23
 
 targetSdk 33
 
+
+Ключ API положить в файл apikey.properties (API_KEY="...") в корень проекта
+
 ## Использовано
 + Jetpack Compose
 + OkHttp3
