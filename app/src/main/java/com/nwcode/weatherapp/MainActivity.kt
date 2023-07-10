@@ -7,18 +7,23 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,6 +80,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 private fun MessageList(viewModel: MyViewModel = viewModel()) {
     val gameUiState by viewModel.uiState.collectAsState()
+    val errorState by viewModel.uiStateError.collectAsState()
     val helper: CommonComposable = CommonComposable()
 
     Column {
@@ -83,6 +89,24 @@ private fun MessageList(viewModel: MyViewModel = viewModel()) {
         helper.PropertyRow("Скорость Ветра", String.format("%.2f",gameUiState.windSpeed) + " м/с")
         helper.PropertyRow("Давление", gameUiState.pressure.toString() + " гПа")
     }
+
+    if(errorState){
+        SnackbarError()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SnackbarError() {
+        Scaffold(/* ... */) { contentPadding ->
+            if (true) {
+                Snackbar(
+                    modifier = Modifier.padding(8.dp)
+                ) { Text(text = "Ошибка при получении данных с API") }
+            }
+            Box(modifier = Modifier.padding(contentPadding)) { /* ... */ }
+
+        }
 }
 
 @Composable
@@ -138,6 +162,7 @@ fun GreetingPreview() {
         Greeting("Android")
     }
 }
+
 
 fun <T>launchActivity(context: Context, activityClass: Class<T>) {
     val intent = Intent(context, activityClass)

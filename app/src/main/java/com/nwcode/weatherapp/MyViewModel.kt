@@ -4,6 +4,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +23,10 @@ class MyViewModel : ViewModel() {
     private val _uiStateForecast = MutableStateFlow(ForecastUiState())
     val uiStateForecast: StateFlow<ForecastUiState> = _uiStateForecast.asStateFlow()
 
+    private val _uiStateError = MutableStateFlow(false)
+    val uiStateError: StateFlow<Boolean> = _uiStateError.asStateFlow()
+
+
     val lat = 59.9343 // Example latitude
     val lon = 30.3351 // Example longitude
 
@@ -36,26 +41,32 @@ class MyViewModel : ViewModel() {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onResponse(call: Call, response: Response) {
-                val responseData = response.body?.string()
-                // Handle the response data here
-                Log.d("API Response", responseData ?: "")
-                val responseDataJson = JSONObject(responseData!!)
-                val hourlyJson = responseDataJson.getJSONArray("list")
+                try {
+                    val responseData = response.body?.string()
+                    // Handle the response data here
+                    Log.d("API Response", responseData ?: "")
+                    val responseDataJson = JSONObject(responseData!!)
+                    val hourlyJson = responseDataJson.getJSONArray("list")
 
-                val helper = CommonComposable();
+                    val helper = CommonComposable();
 
-                val hourly = (0 until hourlyJson.length()).map{index ->
-                    val jsonObject = hourlyJson.getJSONObject(index)
-                    val time = helper.formatDate(jsonObject.getLong("dt"))
-                    val temperature = jsonObject.getJSONObject("main").getDouble("temp")
-                    time to temperature
+                    val hourly = (0 until hourlyJson.length()).map { index ->
+                        val jsonObject = hourlyJson.getJSONObject(index)
+                        val time = helper.formatDate(jsonObject.getLong("dt"))
+                        val temperature = jsonObject.getJSONObject("main").getDouble("temp")
+                        time to temperature
+                    }
+
+                    val handler = Handler(Looper.getMainLooper())
+                    handler.post {
+                        _uiStateForecast.value = ForecastUiState(
+                            hourly = hourly
+                        )
+                    }
                 }
-
-                val handler = Handler(Looper.getMainLooper())
-                handler.post {
-                    _uiStateForecast.value = ForecastUiState(
-                        hourly = hourly
-                    )
+                catch (e: Exception){
+                    Log.e("API Error", "Error while getting response")
+                    _uiStateError.value = true;
                 }
             }
 
@@ -80,36 +91,31 @@ class MyViewModel : ViewModel() {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onResponse(call: Call, response: Response) {
-                val responseData = response.body?.string()
-                // Handle the response data here
-                Log.d("API Response", responseData ?: "")
-                val responseDataJson = JSONObject(responseData!!)
-                val current = responseDataJson.getJSONObject("current")
-                val weather = current.getJSONArray("weather")[0] as JSONObject
+                try {
+                    val responseData = response.body?.string()
+                    // Handle the response data here
+                    Log.d("API Response", responseData ?: "")
+                    val responseDataJson = JSONObject(responseData!!)
+                    val current = responseDataJson.getJSONObject("current")
+                    val weather = current.getJSONArray("weather")[0] as JSONObject
 
-                val hourlyJson = responseDataJson.getJSONArray("hourly")
-
-                val helper = CommonComposable();
-
-                val hourly = (0 until hourlyJson.length()).map{index ->
-                    val jsonObject = hourlyJson.getJSONObject(index)
-                    val time = helper.formatDate(jsonObject.getLong("dt"))
-                    val temperature = jsonObject.getDouble("temp")
-                    time to temperature
+                    val handler = Handler(Looper.getMainLooper())
+                    handler.post {
+                        _uiState.value = WeatherUiState(
+                            temperature = current.getDouble("temp"),
+                            humidity = current.getInt("humidity"),
+                            windSpeed = current.getDouble("wind_speed"),
+                            pressure = current.getInt("pressure"),
+                            dewPoint = current.getDouble("dew_point"),
+                            sunrise = current.getLong("sunrise"),
+                            sunset = current.getLong("sunset"),
+                            weather = weather.getString("main"),
+                        )
+                    }
                 }
-
-                val handler = Handler(Looper.getMainLooper())
-                handler.post {
-                    _uiState.value = WeatherUiState(
-                        temperature = current.getDouble("temp"),
-                        humidity = current.getInt("humidity"),
-                        windSpeed = current.getDouble("wind_speed"),
-                        pressure = current.getInt("pressure"),
-                        dewPoint = current.getDouble("dew_point"),
-                        sunrise = current.getLong("sunrise"),
-                        sunset = current.getLong("sunset"),
-                        weather = weather.getString("main"),
-                    )
+                catch (e: Exception){
+                    Log.e("Error while getting response", e.message ?: "")
+                    _uiStateError.value = true;
                 }
             }
 
